@@ -19,10 +19,10 @@ function App() {
     <div className="min-h-screen pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
       <AppShell>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/kalkulator" element={<KalkulatorPage />} />
-          <Route path="/kalendarz" element={<FullCalendar />} />
-          <Route path="/o-systemie" element={<About />} />
+          <Route path="/tredeco" element={<Home />} />
+          <Route path="/tredeco/kalkulator" element={<KalkulatorPage />} />
+          <Route path="/tredeco/kalendarz" element={<FullCalendar />} />
+          <Route path="/tredeco/o-systemie" element={<About />} />
         </Routes>
         <ReloadPrompt />
       </AppShell>
