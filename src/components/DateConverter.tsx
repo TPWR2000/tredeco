@@ -6,6 +6,7 @@ import {
   getStartWeekdayOfMarch1st,
   getTredecoWeekday,
   gregorianToTredeco,
+  isTredecoLeapYear,
   tredecoToGregorian,
 } from '../logic/tredecoEngine';
 
@@ -46,10 +47,10 @@ export function DateConverter() {
   const today = useMemo(() => new Date(), []);
   const todayTredeco = useMemo(() => gregorianToTredeco(today), [today]);
   const initialTredecoYear = todayTredeco.year;
-  const initialTredecoMonthIndex = todayTredeco.isNilo || todayTredeco.isBix
-    ? 0
+  const initialTredecoMonthIndex = todayTredeco.month === 'Limes'
+    ? 13
     : Math.max(0, TREDECO_MONTHS.findIndex((month) => month === todayTredeco.month));
-  const initialTredecoDay = todayTredeco.isNilo || todayTredeco.isBix ? 1 : todayTredeco.day;
+  const initialTredecoDay = todayTredeco.month === 'Limes' ? todayTredeco.day : todayTredeco.day;
 
   const [mode, setMode] = useState<ConverterMode>('gregorianToTredeco');
 
@@ -95,11 +96,21 @@ export function DateConverter() {
       const parsedDate = new Date(gregorianYear, gregorianMonthIndex, gregorianDay);
       const tredeco = gregorianToTredeco(parsedDate);
       const startWeekday = getStartWeekdayOfMarch1st(tredeco.year);
-      const tredecoWeekday = !tredeco.isNilo && !tredeco.isBix
-        ? getTredecoWeekday(tredeco.day, startWeekday).toLocaleLowerCase('pl-PL')
-        : 'poza tygodniem';
-      const tredecoMonth = tredeco.isNilo ? 'Nilo' : tredeco.isBix ? 'Bix' : tredeco.month;
-      const label = `${tredecoWeekday}, ${tredeco.day} ${tredecoMonth} ${tredeco.year}`;
+      
+      let tredecoWeekday: string;
+      let tredecoDisplay: string;
+      
+      if (tredeco.month === 'Limes') {
+        const dayName = tredeco.day === 1 ? 'Nilo' : 'Bix';
+        const gregorianWeekday = format(parsedDate, 'EEEE', { locale: pl });
+        tredecoWeekday = gregorianWeekday;
+        tredecoDisplay = `${dayName}, Limes ${tredeco.year}`;
+      } else {
+        tredecoWeekday = getTredecoWeekday(tredeco.day, startWeekday).toLocaleLowerCase('pl-PL');
+        tredecoDisplay = `${tredeco.day} ${tredeco.month}`;
+      }
+      
+      const label = `${tredecoWeekday}, ${tredecoDisplay}`;
 
       setGregorianResult(label);
     } catch (error) {
@@ -121,7 +132,16 @@ export function DateConverter() {
       }
 
       const gregorian = tredecoToGregorian(tredecoYear, tredecoMonthIndex, tredecoDay);
-      const gregorianLabel = format(gregorian, 'EEEE, dd.MM.yyyy', { locale: pl });
+      
+      let gregorianLabel: string;
+      if (tredecoMonthIndex === 13) {
+        const dayName = tredecoDay === 1 ? 'Nilo' : 'Bix';
+        const weekdayName = format(gregorian, 'EEEE', { locale: pl });
+        gregorianLabel = `${weekdayName}, ${format(gregorian, 'dd.MM.yyyy', { locale: pl })} (${dayName})`;
+      } else {
+        gregorianLabel = format(gregorian, 'EEEE, dd.MM.yyyy', { locale: pl });
+      }
+      
       setTredecoResult(gregorianLabel);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Błąd konwersji.';
@@ -130,6 +150,14 @@ export function DateConverter() {
   }, [tredecoYear, tredecoMonthIndex, tredecoDay]);
 
   const maxGregorianDay = getGregorianMonthLength(gregorianYear || today.getFullYear(), gregorianMonthIndex);
+  const maxTredecoDay = tredecoMonthIndex === 13 ? (isTredecoLeapYear(tredecoYear) ? 2 : 1) : 28;
+  const tredecoDayLabel = tredecoMonthIndex === 13 ? 'Dzień' : 'Dzień (1-28)';
+  const isLimes = tredecoMonthIndex === 13;
+  const isLeapYear = isTredecoLeapYear(tredecoYear);
+
+  const handleDayChange = (value: number) => {
+    setTredecoDay(value);
+  };
 
   return (
     <section className="space-y-4 rounded-2xl border border-slate-300 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -243,18 +271,29 @@ export function DateConverter() {
             </label>
 
             <label className="grid gap-1">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Dzień (1-28)</span>
-              <input
-                type="number"
-                min={1}
-                max={28}
-                value={tredecoDay || ''}
-                onChange={(event) => {
-                  const nextValue = event.target.value;
-                  setTredecoDay(nextValue === '' ? 0 : Number(nextValue));
-                }}
-                className="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none transition focus:border-emerald-400 dark:border-slate-700 dark:bg-slate-950"
-              />
+              <span className="text-sm text-slate-600 dark:text-slate-300">{tredecoDayLabel}</span>
+              {isLimes ? (
+                <select
+                  value={tredecoDay || ''}
+                  onChange={(event) => handleDayChange(Number(event.target.value))}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none transition focus:border-emerald-400 dark:border-slate-700 dark:bg-slate-950"
+                >
+                  <option value={1}>Nilo</option>
+                  {isLeapYear && <option value={2}>Bix</option>}
+                </select>
+              ) : (
+                <input
+                  type="number"
+                  min={1}
+                  max={maxTredecoDay}
+                  value={tredecoDay || ''}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setTredecoDay(nextValue === '' ? 0 : Number(nextValue));
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none transition focus:border-emerald-400 dark:border-slate-700 dark:bg-slate-950"
+                />
+              )}
             </label>
           </div>
 

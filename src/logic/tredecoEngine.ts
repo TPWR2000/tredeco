@@ -12,6 +12,7 @@ export const TREDECO_MONTHS = [
   'Undeco',
   'Duodeco',
   'Tredeco',
+  'Limes',
 ] as const;
 
 export const TREDECO_WEEKDAYS = [
@@ -129,11 +130,11 @@ export function gregorianToTredeco(date: Date): TredecoDate {
   }
 
   if (dayOfYear === 365) {
-    return { month: 'Nilo', day: 1, isNilo: true, isBix: false, year };
+    return { month: 'Limes', day: 1, isNilo: true, isBix: false, year };
   }
 
   if (dayOfYear === 366) {
-    return { month: 'Bix', day: 1, isNilo: false, isBix: true, year };
+    return { month: 'Limes', day: 2, isNilo: false, isBix: true, year };
   }
 
   const zeroBased = dayOfYear - 1;
@@ -166,20 +167,13 @@ export function tredecoToGregorian(
     }
     offsetDays = monthIndex * 28 + (day - 1);
   } else if (monthIndex === TREDECO_MONTHS.length) {
-    if (day !== 1) {
-      throw new Error('Dzień Nilo musi mieć wartość 1.');
+    const isLeap = isTredecoLeapYear(year);
+    if (day < 1 || day > (isLeap ? 2 : 1)) {
+      throw new Error(`W roku ${isLeap ? 'przystępnym' : 'zwykłym'} Limes ma ${isLeap ? '2' : '1'} dzień/dni.`);
     }
-    offsetDays = 364;
-  } else if (monthIndex === TREDECO_MONTHS.length + 1) {
-    if (!isTredecoLeapYear(year)) {
-      throw new Error('Bix istnieje tylko w przestępnym roku Tredeco.');
-    }
-    if (day !== 1) {
-      throw new Error('Dzień Bix musi mieć wartość 1.');
-    }
-    offsetDays = 365;
+    offsetDays = 363 + day;
   } else {
-    throw new Error('Nieprawidłowy monthIndex. Użyj 0-12, 13 (Nilo) lub 14 (Bix).');
+    throw new Error('Nieprawidłowy monthIndex. Użyj 0-12 dla Primo-Tredeco lub 13 dla Limes.');
   }
 
   const startUtc = Date.UTC(year, 2, 1);

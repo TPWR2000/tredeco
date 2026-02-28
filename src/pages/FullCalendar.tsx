@@ -23,88 +23,6 @@ type MonthCardProps = {
   todayDay: number | null;
 };
 
-type SyncDayTileProps = {
-  title: string;
-  dayLabel: string;
-  description: string;
-  highlighted: boolean;
-  centered?: boolean;
-};
-
-function SyncDayTile({
-  title,
-  dayLabel,
-  description,
-  highlighted,
-  centered = false,
-}: SyncDayTileProps) {
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-
-  const updateTooltipPosition = (clientX: number, clientY: number) => {
-    setTooltipPosition({
-      top: clientY - 20,
-      left: clientX,
-    });
-  };
-
-  return (
-    <div
-      className={`relative ${centered ? 'w-full max-w-sm' : ''}`}
-      onMouseEnter={() => setIsTooltipOpen(true)}
-      onMouseLeave={() => setIsTooltipOpen(false)}
-      onMouseMove={(event) => updateTooltipPosition(event.clientX, event.clientY)}
-      onTouchStart={(event) => {
-        const touch = event.touches[0];
-        if (!touch) {
-          return;
-        }
-
-        updateTooltipPosition(touch.clientX, touch.clientY);
-        setIsTooltipOpen(true);
-      }}
-      onTouchMove={(event) => {
-        const touch = event.touches[0];
-        if (!touch) {
-          return;
-        }
-
-        updateTooltipPosition(touch.clientX, touch.clientY);
-      }}
-      onTouchEnd={() => setIsTooltipOpen(false)}
-    >
-      <button
-        type="button"
-        onClick={() => setIsTooltipOpen((current) => !current)}
-        onFocus={() => setIsTooltipOpen(true)}
-        onBlur={() => setIsTooltipOpen(false)}
-        className={`w-full rounded-2xl border px-4 py-5 text-center transition ${
-          highlighted
-            ? 'today border-cyan-400 bg-cyan-500/20 ring-2 ring-cyan-300/70 animate-pulse [animation-duration:1.8s]'
-            : 'border-indigo-200 bg-white/90 dark:border-indigo-700 dark:bg-slate-900/90'
-        }`}
-      >
-        <p className="text-xl font-semibold">{title}</p>
-        <p className="text-sm text-slate-600 dark:text-slate-300">{dayLabel}</p>
-      </button>
-
-      <div
-        className="pointer-events-none fixed z-[120] w-[min(28rem,90vw)] rounded-xl border border-slate-600/70 bg-slate-800/90 p-3 text-left text-xs leading-relaxed text-slate-100 shadow-xl backdrop-blur-md transition-all duration-200"
-        style={{
-          top: tooltipPosition.top,
-          left: tooltipPosition.left,
-          transform: isTooltipOpen
-            ? 'translate(-50%, -100%)'
-            : 'translate(-50%, calc(-100% + 6px))',
-          opacity: isTooltipOpen ? 1 : 0,
-        }}
-      >
-        {description}
-      </div>
-    </div>
-  );
-}
-
 function MonthCard({ monthName, weekdayHeaders, isToday, todayDay }: MonthCardProps) {
   const days = Array.from({ length: 28 }, (_, index) => index + 1);
   const sundayColumnIndex = weekdayHeaders.findIndex((label) => label === 'Nd');
@@ -175,6 +93,59 @@ function MonthCard({ monthName, weekdayHeaders, isToday, todayDay }: MonthCardPr
   );
 }
 
+type LimesCardProps = {
+  weekdayHeaders: string[];
+  hasBix: boolean;
+  isToday: boolean;
+  todayDay: number | null;
+};
+
+function LimesCard({ weekdayHeaders, hasBix, isToday, todayDay }: LimesCardProps) {
+  const niloDay = 365;
+  const bixDay = 366;
+
+  const niloWeekdayIndex = (niloDay - 1) % 7;
+  const bixWeekdayIndex = (bixDay - 1) % 7;
+
+  const niloWeekday = weekdayHeaders[niloWeekdayIndex];
+  const bixWeekday = weekdayHeaders[bixWeekdayIndex];
+
+  const isNiloToday = isToday && todayDay === 1;
+  const isBixToday = isToday && todayDay === 2;
+
+  return (
+    <article className="rounded-2xl border border-slate-300 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <h3 className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">Limes</h3>
+
+      <div className="flex flex-col gap-0.5">
+        <div
+          className={`flex flex-1 items-center justify-center rounded-md py-3 font-mono text-base font-semibold transition-all ${
+            isNiloToday
+              ? 'today bg-gradient-to-br from-cyan-500 to-emerald-500 text-white ring-2 ring-cyan-300 shadow-lg shadow-cyan-500/40 animate-pulse [animation-duration:1.8s]'
+              : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+          }`}
+        >
+          Nilo <span className="ml-1 opacity-70">({niloWeekday})</span>
+        </div>
+
+        {hasBix ? (
+          <div
+            className={`flex flex-1 items-center justify-center rounded-md py-3 font-mono text-base font-semibold transition-all ${
+              isBixToday
+                ? 'today bg-gradient-to-br from-cyan-500 to-emerald-500 text-white ring-2 ring-cyan-300 shadow-lg shadow-cyan-500/40 animate-pulse [animation-duration:1.8s]'
+                : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+            }`}
+          >
+            Bix <span className="ml-1 opacity-70">({bixWeekday})</span>
+          </div>
+        ) : (
+          <div className="flex flex-1" />
+        )}
+      </div>
+    </article>
+  );
+}
+
 export function FullCalendar() {
   const now = useMemo(() => new Date(), []);
   const nowTredeco = useMemo(() => gregorianToTredeco(now), [now]);
@@ -182,9 +153,9 @@ export function FullCalendar() {
   const [yearInput, setYearInput] = useState<string>(String(nowTredeco.year));
 
   const currentMonthIndex =
-    !nowTredeco.isNilo && !nowTredeco.isBix
-      ? TREDECO_MONTHS.findIndex((month) => month === nowTredeco.month)
-      : null;
+    nowTredeco.month === 'Limes'
+      ? 13
+      : TREDECO_MONTHS.findIndex((month) => month === nowTredeco.month);
 
   const scrollToToday = useCallback(() => {
     document.querySelector('.today')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -204,9 +175,7 @@ export function FullCalendar() {
   const weekdayHeaders = rotateWeekdays(firstDayWeekday);
 
   const shouldHighlightTodayInMonths =
-    selectedYear === nowTredeco.year && currentMonthIndex !== null;
-  const shouldHighlightNilo = selectedYear === nowTredeco.year && nowTredeco.isNilo;
-  const shouldHighlightBix = selectedYear === nowTredeco.year && nowTredeco.isBix;
+    selectedYear === nowTredeco.year && currentMonthIndex !== null && currentMonthIndex < 13;
   const hasBix = isTredecoLeapYear(selectedYear);
   const isViewingCurrentYear = selectedYear === nowTredeco.year;
 
@@ -214,9 +183,6 @@ export function FullCalendar() {
     <section className="mx-auto max-w-[1400px] space-y-8">
       <div className="space-y-2">
         <h2 className="text-3xl font-semibold tracking-tight">Kalendarz Pełny</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Wpisz rok Tredeco. Widok renderuje 13 miesięcy (4x7) i dni synchronizacji.
-        </p>
       </div>
 
       <form
@@ -270,7 +236,7 @@ export function FullCalendar() {
         <h3 className="text-2xl font-semibold tracking-tight">Rok Tredeco {selectedYear}</h3>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {TREDECO_MONTHS.map((monthName, monthIndex) => (
+          {TREDECO_MONTHS.slice(0, 13).map((monthName, monthIndex) => (
             <MonthCard
               key={`${selectedYear}-${monthName}`}
               monthName={monthName}
@@ -280,30 +246,12 @@ export function FullCalendar() {
             />
           ))}
 
-          <article className="rounded-2xl border border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-sky-50 p-5 shadow-sm dark:border-indigo-800 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/50">
-            <h4 className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-              Dni Synchronizacji
-            </h4>
-
-            <div className={hasBix ? 'space-y-3' : 'flex justify-center'}>
-              <SyncDayTile
-                title="Nilo"
-                dayLabel="Dzień 365"
-                highlighted={shouldHighlightNilo}
-                centered={!hasBix}
-                description="365. dzień roku, wypadający po 28. Tredeco. Dzień Zero, który domyka cykl i synchronizuje kalendarz z obiegiem Ziemi wokół Słońca."
-              />
-
-              {hasBix ? (
-                <SyncDayTile
-                  title="Bix"
-                  dayLabel="Dzień 366"
-                  highlighted={shouldHighlightBix}
-                  description="Dzień przestępny dodawany co 4 lata. Zapewnia długoterminową stabilność astronomiczną systemu Tredeco."
-                />
-              ) : null}
-            </div>
-          </article>
+          <LimesCard
+            weekdayHeaders={weekdayHeaders}
+            hasBix={hasBix}
+            isToday={selectedYear === nowTredeco.year && nowTredeco.month === 'Limes'}
+            todayDay={nowTredeco.day}
+          />
         </div>
       </article>
 
