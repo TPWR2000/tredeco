@@ -113,11 +113,8 @@ function getMoonPhaseLabel(phase: number): string {
 
 function resolveTredecoDisplay(date: Date): string {
   const tredeco = gregorianToTredeco(date);
-  if (tredeco.isNilo) {
-    return 'Nilo';
-  }
-  if (tredeco.isBix) {
-    return 'Bix';
+  if (tredeco.month === 'Limes') {
+    return tredeco.day === 1 ? 'Nilo' : 'Bix';
   }
   return `${tredeco.day} ${tredeco.month}`;
 }
@@ -127,13 +124,13 @@ export function Home() {
   const tredecoData = useMemo(() => gregorianToTredeco(now), [now]);
   const tredecoDate = useMemo(() => resolveTredecoDisplay(now), [now]);
   const tredecoWeekday = useMemo(() => {
-    if (tredecoData.isNilo || tredecoData.isBix) {
-      return 'Poza tygodniem';
+    if (tredecoData.month === 'Limes') {
+      return format(now, 'EEEE', { locale: pl });
     }
 
     const startWeekday = getStartWeekdayOfMarch1st(tredecoData.year);
     return getTredecoWeekday(tredecoData.day, startWeekday).toLocaleLowerCase('pl-PL');
-  }, [tredecoData]);
+  }, [tredecoData, now]);
 
   const gregorianDate = useMemo(
     () => format(now, 'd MMMM yyyy', { locale: pl }),
