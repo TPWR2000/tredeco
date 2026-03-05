@@ -188,3 +188,71 @@ export function calculateTredecoScore({
     score: amount * multiplier,
   };
 }
+
+export type TredecoArithmeticInput = {
+  day: number;
+  monthIndex: number;
+  year: number;
+  offsetDays: number;
+};
+
+export type TredecoArithmeticResult = {
+  day: number;
+  monthIndex: number;
+  year: number;
+  isNilo: boolean;
+  isBix: boolean;
+};
+
+export function addDaysToTredecoDate(input: TredecoArithmeticInput): TredecoArithmeticResult {
+  const { day, monthIndex, year, offsetDays } = input;
+
+  if (monthIndex < 0 || monthIndex > 13) {
+    throw new Error('monthIndex musi być w zakresie 0-13 (0=Primo, 13=Limes)');
+  }
+
+  if (monthIndex === 13) {
+    if (day < 1 || day > 2) {
+      throw new Error('Limes może mieć tylko dzień 1 (Nilo) lub 2 (Bix)');
+    }
+  } else {
+    if (day < 1 || day > 28) {
+      throw new Error('Dzień musi być w zakresie 1-28');
+    }
+  }
+
+  let currentYear = year;
+  const isLeap = isTredecoLeapYear(currentYear);
+  let yearLength = isLeap ? 366 : 365;
+
+  let totalDays = monthIndex * 28 + (day - 1) + offsetDays;
+
+  while (totalDays < 0) {
+    currentYear--;
+    totalDays += isTredecoLeapYear(currentYear) ? 366 : 365;
+  }
+
+  while (totalDays >= yearLength) {
+    totalDays -= yearLength;
+    currentYear++;
+    yearLength = isTredecoLeapYear(currentYear) ? 366 : 365;
+  }
+
+  if (totalDays === 364) {
+    return { day: 1, monthIndex: 13, year: currentYear, isNilo: true, isBix: false };
+  }
+
+  if (totalDays === 365) {
+    return { day: 2, monthIndex: 13, year: currentYear, isNilo: false, isBix: true };
+  }
+
+  const newMonthIndex = Math.floor(totalDays / 28);
+  const newDay = (totalDays % 28) + 1;
+
+  return { day: newDay, monthIndex: newMonthIndex, year: currentYear, isNilo: false, isBix: false };
+}
+
+export function getAbsoluteDay(year: number, monthIndex: number, day: number): number {
+  return year * 1000 + monthIndex * 28 + day;
+}
+
